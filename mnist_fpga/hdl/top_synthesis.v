@@ -1,4 +1,4 @@
-// hdl/top.v
+// hdl/top_synthesis.v - Modified for Vivado synthesis
 `timescale 1ns/1ps
 
 module top #(
@@ -19,44 +19,37 @@ module top #(
   wire rst = ~rst_n;
 
   // -------------------------
-  // Memories (behavioral arrays for sim & easy bring-up)
+  // Memories (using BRAM inference for synthesis)
   // -------------------------
   // Input image (int8)
-  reg signed [7:0] x_mem [0:IN1-1];
-
+  (* ram_style = "block" *) reg signed [7:0] x_mem [0:IN1-1];
+  
   // Layer1 params
-  reg signed [7:0]  W1_mem [0:H1*IN1-1];
-  reg signed [31:0] b1_mem [0:H1-1];
+  (* ram_style = "block" *) reg signed [7:0]  W1_mem [0:H1*IN1-1];
+  (* ram_style = "block" *) reg signed [31:0] b1_mem [0:H1-1];
 
   // Layer1 output buffer (int8)
-  reg signed [7:0]  h1_mem [0:H1-1];
+  (* ram_style = "distributed" *) reg signed [7:0]  h1_mem [0:H1-1];
 
   // Layer2 params
-  reg signed [7:0]  W2_mem [0:OUT2*IN2-1];
-  reg signed [31:0] b2_mem [0:OUT2-1];
+  (* ram_style = "block" *) reg signed [7:0]  W2_mem [0:OUT2*IN2-1];
+  (* ram_style = "block" *) reg signed [31:0] b2_mem [0:OUT2-1];
 
   // Layer2 output (logits int32)
-  reg signed [31:0] y2_mem [0:OUT2-1];
+  (* ram_style = "distributed" *) reg signed [31:0] y2_mem [0:OUT2-1];
 
-  // shift1 read from file
-  reg [5:0] shift1;
+  // shift1 parameter (hardcoded for synthesis)
+  localparam [5:0] shift1 = 6'd7;  // Update this value from shift1.txt
 
-  // ------------- File loading -------------
-  // Use plusarg MEM_INIT_DIR=path/to/artifacts
-  string memdir;
+  // ------------- Memory Initialization for Synthesis -------------
   initial begin
-    if (!$value$plusargs("MEM_INIT_DIR=%s", memdir)) memdir = "hdl/mem_init";
-
-    // params
-    $readmemh({memdir,"/W1.mem"}, W1_mem);
-    $readmemh({memdir,"/b1.mem"}, b1_mem);
-    $readmemh({memdir,"/W2.mem"}, W2_mem);
-    $readmemh({memdir,"/b2.mem"}, b2_mem);
-    // input
-    $readmemh({memdir,"/sample_input.mem"}, x_mem);
-
-    // Hardcode shift1 value for synthesis (from shift1.txt)
-    shift1 = 6'd0;
+    // Initialize memories with generated data
+    // Note: In actual synthesis, these will be replaced by INIT attributes or COE files
+    $readmemh("W1.mem", W1_mem);
+    $readmemh("b1.mem", b1_mem);
+    $readmemh("W2.mem", W2_mem);
+    $readmemh("b2.mem", b2_mem);
+    $readmemh("sample_input.mem", x_mem);
   end
 
   // -------------------------
