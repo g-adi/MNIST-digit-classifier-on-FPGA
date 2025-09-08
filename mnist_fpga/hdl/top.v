@@ -38,25 +38,17 @@ module top #(
   // Layer2 output (logits int32)
   reg signed [31:0] y2_mem [0:OUT2-1];
 
-  // shift1 read from file
-  reg [5:0] shift1;
+  // shift1 parameter (hardcoded from shift1.txt for synthesis)
+  localparam [5:0] shift1 = 6'd0;
 
-  // ------------- File loading -------------
-  // Use plusarg MEM_INIT_DIR=path/to/artifacts
-  string memdir;
+  // ------------- Memory Initialization for Synthesis -------------
   initial begin
-    if (!$value$plusargs("MEM_INIT_DIR=%s", memdir)) memdir = "hdl/mem_init";
-
-    // params
-    $readmemh({memdir,"/W1.mem"}, W1_mem);
-    $readmemh({memdir,"/b1.mem"}, b1_mem);
-    $readmemh({memdir,"/W2.mem"}, W2_mem);
-    $readmemh({memdir,"/b2.mem"}, b2_mem);
-    // input
-    $readmemh({memdir,"/sample_input.mem"}, x_mem);
-
-    // Hardcode shift1 value for synthesis (from shift1.txt)
-    shift1 = 6'd0;
+    // Direct file paths for synthesis (no string concatenation)
+    $readmemh("W1.mem", W1_mem);
+    $readmemh("b1.mem", b1_mem);
+    $readmemh("W2.mem", W2_mem);
+    $readmemh("b2.mem", b2_mem);
+    $readmemh("sample_input.mem", x_mem);
   end
 
   // -------------------------
