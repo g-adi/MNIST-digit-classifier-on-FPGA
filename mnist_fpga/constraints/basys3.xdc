@@ -25,6 +25,3 @@ set_property IOSTANDARD LVCMOS33 [get_ports {predicted_digit[3]}]
 # Done signal LED
 set_property PACKAGE_PIN W18 [get_ports done]					
 set_property IOSTANDARD LVCMOS33 [get_ports done]
-
-# Timing constraints for synthesis
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk_IBUF]

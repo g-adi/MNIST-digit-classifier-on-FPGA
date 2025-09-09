@@ -17,7 +17,10 @@ module top #(
   output reg [3:0]  predicted_digit  // fits 0..9
 );
 
-  wire rst = ~rst_n;
+  // Reset button synchronization and edge detection
+  reg rst_btn_sync1, rst_btn_sync2, rst_btn_prev;
+  wire rst_btn_edge = rst_btn_sync2 & ~rst_btn_prev;
+  reg system_reset;
 
   // -------------------------
   // Memories (behavioral arrays for sim & easy bring-up)
@@ -79,7 +82,7 @@ module top #(
   wire fc1_done;
 
   fc1_layer #(.IN_DIM(IN1), .OUT_DIM(H1)) u_fc1 (
-    .clk(clk), .rst(rst), .start(fc1_start), .done(fc1_done),
+    .clk(clk), .rst(system_reset), .start(fc1_start), .done(fc1_done),
     .shift_right(shift1),
     .x_addr(fc1_x_addr), .x_data(fc1_x_data),
     .w_addr(fc1_w_addr), .w_data(fc1_w_data),
@@ -112,7 +115,7 @@ module top #(
   wire fc2_done;
 
   fc2_layer #(.IN_DIM(IN2), .OUT_DIM(OUT2)) u_fc2 (
-    .clk(clk), .rst(rst), .start(fc2_start), .done(fc2_done),
+    .clk(clk), .rst(system_reset), .start(fc2_start), .done(fc2_done),
     .x_addr(fc2_x_addr), .x_data(fc2_x_data),
     .w_addr(fc2_w_addr), .w_data(fc2_w_data),
     .b_addr(fc2_b_addr), .b_data(fc2_b_data),
@@ -140,8 +143,25 @@ module top #(
   reg start_btn_sync1, start_btn_sync2, start_btn_prev;
   wire start_btn_edge = start_btn_sync2 & ~start_btn_prev;
 
+  // Reset button synchronization (always runs, no reset dependency)
   always @(posedge clk) begin
-    if (rst) begin
+    rst_btn_sync1 <= ~rst_n;  // Invert because button is active low
+    rst_btn_sync2 <= rst_btn_sync1;
+    rst_btn_prev <= rst_btn_sync2;
+  end
+
+  // System reset generation
+  always @(posedge clk) begin
+    if (rst_btn_edge) begin
+      system_reset <= 1'b1;
+    end else begin
+      system_reset <= 1'b0;
+    end
+  end
+
+  // Start button synchronization
+  always @(posedge clk) begin
+    if (system_reset) begin
       start_btn_sync1 <= 1'b0;
       start_btn_sync2 <= 1'b0;
       start_btn_prev <= 1'b0;
@@ -153,7 +173,7 @@ module top #(
   end
 
   always @(posedge clk) begin
-    if (rst) begin
+    if (system_reset) begin
       tstate <= T_IDLE;
       fc1_start <= 1'b0;
       fc2_start <= 1'b0;
