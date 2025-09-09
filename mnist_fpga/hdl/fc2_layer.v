@@ -47,19 +47,19 @@ module fc2_layer #(
   always @(posedge clk) begin
     if (rst) begin
       state <= S_IDLE; done <= 1'b0;
-      out_counter <= {$clog2(OUT_DIM){1'b0}}; in_counter <= {$clog2(IN_DIM){1'b0}};
+      out_counter <= 4'b0; in_counter <= 5'b0;
       acc <= 32'sd0;
-      x_addr <= {$clog2(IN_DIM){1'b0}}; w_addr <= {$clog2(IN_DIM*OUT_DIM){1'b0}}; b_addr <= {$clog2(OUT_DIM){1'b0}};
-      y_we <= 1'b0; y_addr <= {$clog2(OUT_DIM){1'b0}}; y_data <= 32'sd0;
+      x_addr <= 5'b0; w_addr <= 9'b0; b_addr <= 4'b0;
+      y_we <= 1'b0; y_addr <= 4'b0; y_data <= 32'sd0;
     end else begin
       y_we <= 1'b0;
       case (state)
         S_IDLE: begin
           done <= 1'b0;
           if (start) begin
-            out_counter <= {$clog2(OUT_DIM){1'b0}};
-            in_counter  <= {$clog2(IN_DIM){1'b0}};
-            b_addr      <= {$clog2(OUT_DIM){1'b0}};
+            out_counter <= 4'b0;
+            in_counter  <= 5'b0;
+            b_addr      <= 4'b0;
             state       <= S_LOAD_BIAS;
           end
         end
@@ -67,8 +67,8 @@ module fc2_layer #(
         S_LOAD_BIAS: begin
           b_addr <= out_counter;
           acc    <= b_data;            // init with bias
-          in_counter <= {$clog2(IN_DIM){1'b0}};
-          x_addr     <= {$clog2(IN_DIM){1'b0}};
+          in_counter <= 5'b0;
+          x_addr     <= 5'b0;
           w_addr     <= w_flat_addr;
           state      <= S_MAC;
         end
