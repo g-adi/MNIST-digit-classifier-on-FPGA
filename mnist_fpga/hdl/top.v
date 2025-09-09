@@ -10,6 +10,7 @@ module top #(
 )(
   input  wire clk,
   input  wire rst_n,
+  input  wire start_btn,  // Start button input
 
   // Optional simple outputs for sim/board bring-up
   output reg        done,
@@ -122,10 +123,11 @@ module top #(
   // Top-level FSM + Argmax
   // -------------------------
   localparam T_IDLE   = 3'd0;
-  localparam T_L1     = 3'd1;
-  localparam T_L2     = 3'd2;
-  localparam T_ARGMAX = 3'd3;
-  localparam T_DONE   = 3'd4;
+  localparam T_WAIT   = 3'd1;
+  localparam T_L1     = 3'd2;
+  localparam T_L2     = 3'd3;
+  localparam T_ARGMAX = 3'd4;
+  localparam T_DONE   = 3'd5;
 
   reg [2:0] tstate;
 
@@ -133,6 +135,22 @@ module top #(
   reg [3:0]  idx;
   reg signed [31:0] maxv;
   reg [3:0]  maxi;
+
+  // Button synchronization and edge detection
+  reg start_btn_sync1, start_btn_sync2, start_btn_prev;
+  wire start_btn_edge = start_btn_sync2 & ~start_btn_prev;
+
+  always @(posedge clk) begin
+    if (rst) begin
+      start_btn_sync1 <= 1'b0;
+      start_btn_sync2 <= 1'b0;
+      start_btn_prev <= 1'b0;
+    end else begin
+      start_btn_sync1 <= start_btn;
+      start_btn_sync2 <= start_btn_sync1;
+      start_btn_prev <= start_btn_sync2;
+    end
+  end
 
   always @(posedge clk) begin
     if (rst) begin
@@ -145,19 +163,29 @@ module top #(
     end else begin
       fc1_start <= 1'b0;
       fc2_start <= 1'b0;
-      done      <= 1'b0;
 
       case (tstate)
         T_IDLE: begin
-          // auto-start once after reset; in a real system you'd wait for a 'start' input
-          fc1_start <= 1'b1;
-          tstate    <= T_L1;
+          // Reset state - all outputs are 0, wait for start button
+          done <= 1'b0;
+          predicted_digit <= 4'd0;
+          tstate <= T_WAIT;
+        end
+
+        T_WAIT: begin
+          // Wait for start button press
+          done <= 1'b0;
+          predicted_digit <= 4'd0;
+          if (start_btn_edge) begin
+            fc1_start <= 1'b1;
+            tstate <= T_L1;
+          end
         end
 
         T_L1: begin
           if (fc1_done) begin
             fc2_start <= 1'b1;
-            tstate    <= T_L2;
+            tstate <= T_L2;
           end
         end
 
@@ -185,8 +213,9 @@ module top #(
         end
 
         T_DONE: begin
-          done   <= 1'b1;   // pulse one cycle
-          tstate <= T_IDLE; // or stay in DONE if you prefer
+          done <= 1'b1;
+          // Stay in DONE state - predicted_digit remains displayed
+          // Only reset will bring us back to IDLE
         end
 
         default: tstate <= T_IDLE;
