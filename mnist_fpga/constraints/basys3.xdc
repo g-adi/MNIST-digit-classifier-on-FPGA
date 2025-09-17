@@ -25,3 +25,11 @@ set_property IOSTANDARD LVCMOS33 [get_ports {predicted_digit[3]}]
 # Done signal LED
 set_property PACKAGE_PIN W18 [get_ports done]					
 set_property IOSTANDARD LVCMOS33 [get_ports done]
+
+# Input delays
+set_input_delay -clock sys_clk_pin -max 10.00 [get_ports start_btn]
+set_input_delay -clock sys_clk_pin -max 11.00 [get_ports rst_n]
+
+# Output delays
+set_output_delay -clock sys_clk_pin -max 10.00 [get_ports done]
+set_output_delay -clock sys_clk_pin -max 11.00 [get_ports {predicted_digit[*]}]
